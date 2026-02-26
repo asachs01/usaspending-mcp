@@ -17,8 +17,9 @@ mcp = FastMCP(
     json_response=True,
 )
 
-# Import tool modules so they register with @mcp.tool()
+# Import tool and resource modules so they register with @mcp.tool() / @mcp.resource()
 import usaspending_mcp.tools.registry  # noqa: F401
+import usaspending_mcp.resources.registry  # noqa: F401
 
 
 def _detect_transport() -> str:

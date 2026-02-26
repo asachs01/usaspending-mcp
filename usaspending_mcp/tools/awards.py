@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mcp.server.fastmcp import Context
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 from usaspending_mcp.client.cache import cache
@@ -107,6 +109,7 @@ async def search_awards(
     max_amount: float | None = None,
     page: int = 1,
     limit: int = 10,
+    ctx: Context | None = None,
 ) -> dict:
     """Search federal awards (contracts, grants, loans, etc.).
 
@@ -191,12 +194,22 @@ async def search_awards(
         "sort": "Award Amount",
     }
 
+    if ctx:
+        await ctx.info(f"Searching awards (page {page}, limit {limit})")
+
     result = await api.search_awards(payload)
 
     awards = result.get("results", [])
     page_meta = result.get("page_metadata", {})
     total = page_meta.get("total", 0)
     has_next = page_meta.get("hasNext", False)
+
+    if ctx:
+        await ctx.report_progress(
+            progress=page,
+            total=max(1, (total + limit - 1) // limit) if total else 1,
+            message=f"Fetched page {page} — {len(awards)} results of {total} total",
+        )
 
     return {
         "results": awards,

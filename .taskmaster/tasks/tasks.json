@@ -376,7 +376,7 @@
         "dependencies": [
           "5"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -434,7 +434,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:10:38.910Z"
+        "updatedAt": "2026-02-26T17:11:50.667Z"
       },
       {
         "id": "7",
@@ -446,7 +446,7 @@
         "dependencies": [
           "6"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -504,7 +504,8 @@
             "testStrategy": "Mock API endpoint; verify polling interval, update emissions on changes, subscription notifications, and log entries during cache eviction tests.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:11:55.368Z"
       },
       {
         "id": "8",
@@ -799,9 +800,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:10:38.910Z",
+      "lastModified": "2026-02-26T17:11:55.368Z",
       "taskCount": 11,
-      "completedCount": 5,
+      "completedCount": 6,
       "tags": [
         "master"
       ]

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mcp.server.fastmcp import Context
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 from usaspending_mcp.client.cache import cache
@@ -14,6 +16,7 @@ async def manage_download(
     agency_code: str | None = None,
     fiscal_year: int | None = None,
     file_name: str | None = None,
+    ctx: Context | None = None,
 ) -> dict:
     """Manage bulk CSV download jobs for federal spending data.
 
@@ -30,11 +33,24 @@ async def manage_download(
                 "error": "file_name is required for status checks.",
                 "hint": "Use the file_name returned from action='initiate'.",
             }
-        return await api.get_download_status(file_name)
+        if ctx:
+            await ctx.info(f"Checking download status for {file_name}")
+        result = await api.get_download_status(file_name)
+        if ctx and "total_rows" in result:
+            pct = result.get("total_rows", 0)
+            await ctx.report_progress(
+                progress=pct,
+                total=pct,
+                message=f"Download status: {result.get('status', 'unknown')}",
+            )
+        return result
 
     elif action == "initiate":
         if fiscal_year is None:
             fiscal_year = await cache.get("fiscal_year")
+
+        if ctx:
+            await ctx.info(f"Initiating {award_type} download for FY{fiscal_year}")
 
         filters = {
             "prime_award_types": _get_award_type_codes(award_type),
@@ -55,6 +71,14 @@ async def manage_download(
         }
 
         result = await api.initiate_download(payload)
+
+        if ctx:
+            await ctx.report_progress(
+                progress=0,
+                total=100,
+                message="Download job initiated — use action='status' to poll",
+            )
+
         result["_query"] = {
             "action": "initiate",
             "award_type": award_type,
