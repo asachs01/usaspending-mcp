@@ -9,7 +9,7 @@
         "testStrategy": "Run `uvx usaspending-mcp` and verify capabilities JSON printed without errors. Test transport detection with flags and stdin piping. Verify MCPB manifest loads correctly.",
         "priority": "high",
         "dependencies": [],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -74,7 +74,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:02:06.139Z"
+        "updatedAt": "2026-02-26T17:04:39.976Z"
       },
       {
         "id": "2",
@@ -86,7 +86,7 @@
         "dependencies": [
           "1"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -146,7 +146,8 @@
             "testStrategy": "Integration test: trigger resources/updated callback, verify cache.get('agencies') refetches fresh data",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:04:43.621Z"
       },
       {
         "id": "3",
@@ -794,9 +795,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:02:06.142Z",
+      "lastModified": "2026-02-26T17:04:43.621Z",
       "taskCount": 11,
-      "completedCount": 0,
+      "completedCount": 1,
       "tags": [
         "master"
       ]
