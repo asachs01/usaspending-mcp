@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 from mcp.server.fastmcp import Context
 
 from usaspending_mcp.server import mcp
@@ -35,12 +36,17 @@ async def manage_download(
             }
         if ctx:
             await ctx.info(f"Checking download status for {file_name}")
-        result = await api.get_download_status(file_name)
-        if ctx and "total_rows" in result:
-            pct = result.get("total_rows", 0)
+        try:
+            result = await api.get_download_status(file_name)
+        except httpx.HTTPStatusError as e:
+            return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+        except httpx.RequestError as e:
+            return {"error": f"Network error: {e}"}
+        if ctx and "status" in result:
+            is_done = result.get("status") == "finished"
             await ctx.report_progress(
-                progress=pct,
-                total=pct,
+                progress=1 if is_done else 0,
+                total=1,
                 message=f"Download status: {result.get('status', 'unknown')}",
             )
         return result
@@ -70,7 +76,12 @@ async def manage_download(
             "file_format": "csv",
         }
 
-        result = await api.initiate_download(payload)
+        try:
+            result = await api.initiate_download(payload)
+        except httpx.HTTPStatusError as e:
+            return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+        except httpx.RequestError as e:
+            return {"error": f"Network error: {e}"}
 
         if ctx:
             await ctx.report_progress(

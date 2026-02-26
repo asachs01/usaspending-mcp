@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 
@@ -23,18 +25,23 @@ async def query_recipient(
         recipient_id: Recipient unique ID for full profile
         year: Fiscal year for profile data (default: 'latest')
     """
-    if recipient_id:
-        result = await api.get_recipient(recipient_id, year=year)
-        result["_query"] = {"recipient_id": recipient_id, "year": year}
-        return result
+    try:
+        if recipient_id:
+            result = await api.get_recipient(recipient_id, year=year)
+            result["_query"] = {"recipient_id": recipient_id, "year": year}
+            return result
 
-    if search_text:
-        results = await api.autocomplete_recipient(search_text)
-        return {
-            "results": results,
-            "count": len(results),
-            "_query": {"search_text": search_text},
-        }
+        if search_text:
+            results = await api.autocomplete_recipient(search_text)
+            return {
+                "results": results,
+                "count": len(results),
+                "_query": {"search_text": search_text},
+            }
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}
 
     return {
         "error": "Provide either 'search_text' for search or 'recipient_id' for profile.",

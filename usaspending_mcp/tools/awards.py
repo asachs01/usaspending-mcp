@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 from mcp.server.fastmcp import Context
 
 from usaspending_mcp.server import mcp
@@ -197,7 +198,12 @@ async def search_awards(
     if ctx:
         await ctx.info(f"Searching awards (page {page}, limit {limit})")
 
-    result = await api.search_awards(payload)
+    try:
+        result = await api.search_awards(payload)
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}
 
     awards = result.get("results", [])
     page_meta = result.get("page_metadata", {})
@@ -237,44 +243,45 @@ async def get_award(
 
     Args:
         award_id: Generated unique award ID (e.g., 'CONT_IDV_TMHQ10C0040_2044')
-        detail_type: Level of detail — one of: full, funding, subawards, transactions, federal_accounts
+        detail_type: Level of detail — one of: full, funding, subawards, transactions, federal_account_count
     """
-    if detail_type == "full":
-        return await api.get_award(award_id)
-
-    elif detail_type == "funding":
-        return await api.get_award_funding({
-            "award_id": award_id,
-            "limit": 10,
-            "page": 1,
-            "order": "desc",
-            "sort": "reporting_fiscal_date",
-        })
-
-    elif detail_type == "subawards":
-        from usaspending_mcp.client import api as api_mod
-        return await api_mod.search_subawards({
-            "award_id": award_id,
-            "limit": 10,
-            "page": 1,
-            "order": "desc",
-            "sort": "subaward_number",
-        })
-
-    elif detail_type == "transactions":
-        return await api.search_transactions({
-            "award_id": award_id,
-            "limit": 10,
-            "page": 1,
-            "order": "desc",
-            "sort": "action_date",
-        })
-
-    elif detail_type == "federal_accounts":
-        return await api.get_award_count(award_id)
-
-    else:
+    valid_types = ["full", "funding", "subawards", "transactions", "federal_account_count"]
+    if detail_type not in valid_types:
         return {
             "error": f"Unknown detail_type: {detail_type!r}",
-            "valid_types": ["full", "funding", "subawards", "transactions", "federal_accounts"],
+            "valid_types": valid_types,
         }
+
+    try:
+        if detail_type == "full":
+            return await api.get_award(award_id)
+        elif detail_type == "funding":
+            return await api.get_award_funding({
+                "award_id": award_id,
+                "limit": 10,
+                "page": 1,
+                "order": "desc",
+                "sort": "reporting_fiscal_date",
+            })
+        elif detail_type == "subawards":
+            return await api.search_subawards({
+                "award_id": award_id,
+                "limit": 10,
+                "page": 1,
+                "order": "desc",
+                "sort": "subaward_number",
+            })
+        elif detail_type == "transactions":
+            return await api.search_transactions({
+                "award_id": award_id,
+                "limit": 10,
+                "page": 1,
+                "order": "desc",
+                "sort": "action_date",
+            })
+        elif detail_type == "federal_account_count":
+            return await api.get_award_count(award_id)
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}

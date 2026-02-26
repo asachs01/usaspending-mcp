@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-02-26
+
+### Fixed
+- Add httpx error handling at all tool and resource boundaries (API errors now return structured dicts instead of unhandled exceptions)
+- Fix manage_download status progress always reporting 100% (progress == total == total_rows)
+- Rename get_award detail_type "federal_accounts" to "federal_account_count" to match actual endpoint behavior (returns count, not account list)
+
+### Changed
+- 72 tests (up from 67) — added coverage for get_award subawards, transactions, federal_account_count branches and API error paths
+
 ## [0.1.0] - 2026-02-26
 
 ### Added

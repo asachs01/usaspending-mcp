@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 
@@ -39,10 +41,15 @@ async def query_disaster(
         "spending_type": "total",
     }
 
-    if query_type == "loans":
-        result = await api.get_disaster_loans(breakdown, payload)
-    else:
-        result = await api.get_disaster_spending(breakdown, payload)
+    try:
+        if query_type == "loans":
+            result = await api.get_disaster_loans(breakdown, payload)
+        else:
+            result = await api.get_disaster_spending(breakdown, payload)
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}
 
     result["_query"] = {
         "disaster_code": disaster_code,

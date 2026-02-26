@@ -1,5 +1,6 @@
 """Tests for search_awards and get_award tools."""
 
+import httpx
 import pytest
 import respx
 from httpx import Response
@@ -86,3 +87,52 @@ async def test_get_award_invalid_detail_type():
     result = await get_award("CONT_123", detail_type="invalid")
     assert "error" in result
     assert "valid_types" in result
+
+
+@respx.mock
+async def test_get_award_subawards():
+    respx.post("/api/v2/subawards/").mock(
+        return_value=Response(200, json={"results": [{"id": 1}], "page_metadata": {}})
+    )
+    result = await get_award("CONT_123", detail_type="subawards")
+    assert "results" in result
+
+
+@respx.mock
+async def test_get_award_transactions():
+    respx.post("/api/v2/transactions/").mock(
+        return_value=Response(200, json={"results": [{"id": 1}], "page_metadata": {}})
+    )
+    result = await get_award("CONT_123", detail_type="transactions")
+    assert "results" in result
+
+
+@respx.mock
+async def test_get_award_federal_account_count():
+    respx.get("/api/v2/awards/count/federal_account/CONT_123/").mock(
+        return_value=Response(200, json={"federal_account_count": 3})
+    )
+    result = await get_award("CONT_123", detail_type="federal_account_count")
+    assert result["federal_account_count"] == 3
+
+
+@respx.mock
+async def test_search_awards_api_error():
+    """Verify API errors are caught and returned as structured dicts."""
+    respx.post("/api/v2/search/spending_by_award/").mock(
+        return_value=Response(500, text="Internal Server Error")
+    )
+    result = await search_awards(keyword="test")
+    assert "error" in result
+    assert "500" in result["error"]
+
+
+@respx.mock
+async def test_get_award_api_error():
+    """Verify API errors on get_award are caught."""
+    respx.get("/api/v2/awards/BAD_ID/").mock(
+        return_value=Response(404, text="Not Found")
+    )
+    result = await get_award("BAD_ID")
+    assert "error" in result
+    assert "404" in result["error"]

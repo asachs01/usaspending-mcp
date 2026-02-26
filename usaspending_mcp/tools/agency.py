@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 from usaspending_mcp.client.cache import cache
@@ -81,7 +83,12 @@ async def query_agency(
 
     # No breakdown → agency overview
     if breakdown is None:
-        result = await api.get_agency(code)
+        try:
+            result = await api.get_agency(code)
+        except httpx.HTTPStatusError as e:
+            return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+        except httpx.RequestError as e:
+            return {"error": f"Network error: {e}"}
         result["_query"] = {"agency_name": agency_name, "toptier_code": code}
         return result
 
@@ -93,9 +100,14 @@ async def query_agency(
             "valid_breakdowns": list(_BREAKDOWN_ENDPOINTS.keys()),
         }
 
-    result = await api.get_agency_breakdown(
-        code, endpoint, fiscal_year=fiscal_year
-    )
+    try:
+        result = await api.get_agency_breakdown(
+            code, endpoint, fiscal_year=fiscal_year
+        )
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}
     result["_query"] = {
         "agency_name": agency_name,
         "toptier_code": code,

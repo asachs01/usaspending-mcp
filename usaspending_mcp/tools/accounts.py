@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 
@@ -27,24 +29,29 @@ async def query_accounts(
         page: Page number for listing (default 1)
         limit: Results per page (default 10)
     """
-    if federal_account_id:
-        result = await api.get_federal_account(federal_account_id)
-        result["_query"] = {"federal_account_id": federal_account_id}
-        return result
+    try:
+        if federal_account_id:
+            result = await api.get_federal_account(federal_account_id)
+            result["_query"] = {"federal_account_id": federal_account_id}
+            return result
 
-    if treasury_account_symbol:
-        result = await api.get_treasury_account(treasury_account_symbol, breakdown)
-        result["_query"] = {
-            "treasury_account_symbol": treasury_account_symbol,
-            "breakdown": breakdown,
-        }
-        return result
+        if treasury_account_symbol:
+            result = await api.get_treasury_account(treasury_account_symbol, breakdown)
+            result["_query"] = {
+                "treasury_account_symbol": treasury_account_symbol,
+                "breakdown": breakdown,
+            }
+            return result
 
-    # List federal accounts
-    result = await api.list_federal_accounts({
-        "page": page,
-        "limit": limit,
-        "sort": {"field": "account_number", "direction": "asc"},
-    })
-    result["_query"] = {"action": "list", "page": page, "limit": limit}
-    return result
+        # List federal accounts
+        result = await api.list_federal_accounts({
+            "page": page,
+            "limit": limit,
+            "sort": {"field": "account_number", "direction": "asc"},
+        })
+        result["_query"] = {"action": "list", "page": page, "limit": limit}
+        return result
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}

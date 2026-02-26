@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from usaspending_mcp.server import mcp
 from usaspending_mcp.client import api
 from usaspending_mcp.client.cache import cache
@@ -32,6 +34,11 @@ async def query_spending(
         fiscal_year = await cache.get("fiscal_year")
 
     filters = {"fiscal_year": fiscal_year}
-    result = await api.get_spending(breakdown, filters)
+    try:
+        result = await api.get_spending(breakdown, filters)
+    except httpx.HTTPStatusError as e:
+        return {"error": f"API error {e.response.status_code}", "detail": e.response.text[:200]}
+    except httpx.RequestError as e:
+        return {"error": f"Network error: {e}"}
     result["_query"] = {"breakdown": breakdown, "fiscal_year": fiscal_year}
     return result
