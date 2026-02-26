@@ -1,0 +1,745 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project Scaffold and MCPB Manifest",
+        "description": "Create project structure, pyproject.toml with MCPB extension config, and basic MCP server entry points per Phase 1",
+        "details": "Create directory structure matching PRD architecture. Use `mcp>=1.3.0`, `httpx>=0.27.0`, `anyio>=4.6.0`, `fastmcp>=0.5.0` (latest Feb 2026). Implement `server.py` with transport detection logic using `FastMCP` for both STDIO and HTTP modes. Add `__init__.py` with MCPB `extension_manifest`. Entry points: `usaspending-mcp` (STDIO), `usaspending-mcp-http` (HTTP port 8765). Test with `uvx usaspending-mcp --transport stdio`.",
+        "testStrategy": "Run `uvx usaspending-mcp` and verify capabilities JSON printed without errors. Test transport detection with flags and stdin piping. Verify MCPB manifest loads correctly.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Project Directory Structure",
+            "description": "Set up the full directory tree matching the PRD architecture with all empty module stubs and __init__.py files.",
+            "dependencies": [],
+            "details": "Use mkdir -p to create directories like src/usaspending_mcp/{client,decision_tree,notifications,resources,transport} and touch all __init__.py files plus stubs for api.py, cache.py, server.py, etc. Ensure exact PRD module structure.",
+            "status": "pending",
+            "testStrategy": "Verify directory tree with tree command or ls -R matches expected PRD architecture with all stubs present."
+          },
+          {
+            "id": 2,
+            "title": "Configure pyproject.toml with Dependencies and Scripts",
+            "description": "Create pyproject.toml with build system, MCPB extension config, specified dependencies, and console entry points.",
+            "dependencies": [
+              1
+            ],
+            "details": "Include [build-system] with hatchling or setuptools, [project] with name='usaspending-mcp', dependencies mcp>=1.3.0 httpx>=0.27.0 anyio>=4.6.0 fastmcp>=0.5.0, [project.scripts] usaspending-mcp='usaspending_mcp.server:run_stdio' usaspending-mcp-http='usaspending_mcp.server:run_http', and [tool.mcpb] config.",
+            "status": "pending",
+            "testStrategy": "Run uv sync or pip install -e . and verify dependencies install without errors and entry points are registered."
+          },
+          {
+            "id": 3,
+            "title": "Implement __init__.py with MCPB Extension Manifest",
+            "description": "Add MCPB extension_manifest to the root __init__.py file for desktop extension compatibility.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "In src/usaspending_mcp/__init__.py, define extension_manifest with name, display_name, version, description matching pyproject.toml [tool.mcpb] settings per MCPB specification for host application integration.",
+            "status": "pending",
+            "testStrategy": "Load module with python -c 'import usaspending_mcp' and verify manifest attributes are accessible without import errors."
+          },
+          {
+            "id": 4,
+            "title": "Develop server.py with Transport Detection Logic",
+            "description": "Implement server.py using FastMCP with automatic detection for STDIO and HTTP (port 8765) transports.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Create run_stdio() and run_http() functions using FastMCP(transport='stdio') and FastMCP(transport='streamable-http', host='0.0.0.0', port=8765). Add argparser for --transport flag detection. Include basic capabilities declaration and error handling.",
+            "status": "pending",
+            "testStrategy": "Run python -m usaspending_mcp.server --transport stdio and verify server starts without errors; check HTTP mode on port 8765."
+          },
+          {
+            "id": 5,
+            "title": "Test Entry Points and Transport Functionality",
+            "description": "Validate console entry points and transport detection with uvx testing as specified.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Test uvx usaspending-mcp --transport stdio prints capabilities JSON without errors. Verify usaspending-mcp-http binds to port 8765. Pipe stdin test for STDIO mode and curl localhost:8765/mcp for HTTP. Confirm MCPB manifest loads in both modes.",
+            "status": "pending",
+            "testStrategy": "Execute uvx usaspending-mcp and verify JSON capabilities output. Test transport flags, stdin piping, and HTTP endpoint responses match MCP protocol expectations."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "API Client and Lazy Cache Implementation",
+        "description": "Build async httpx wrapper for USASpending API and in-memory TTL cache per Phase 2",
+        "details": "Create `client/api.py` with `AsyncClient` using `httpx.AsyncClient(base_url='https://api.usaspending.gov', limits=httpx.Limits(max_keepalive_connections=10, max_connections=20))`. Implement methods for all 10 API domains. Create `client/cache.py` using `dict` with `asyncio.Lock` and TTL via `time.time()` checks (24h agencies/NAICS/PSC, 12h fiscal_year). Lazy load on first access. Add cache eviction via `resources/updated` callback.",
+        "testStrategy": "Unit test cache.get('agencies') fetches/caches/evicts correctly. Integration test API client against live endpoints with mocked responses.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create AsyncClient in api.py",
+            "description": "Initialize httpx.AsyncClient with USASpending base URL and connection limits in client/api.py",
+            "dependencies": [],
+            "details": "Use httpx.AsyncClient(base_url='https://api.usaspending.gov', limits=httpx.Limits(max_keepalive_connections=10, max_connections=20)) as class attribute or singleton for reuse across requests[1][2]",
+            "status": "pending",
+            "testStrategy": "Verify client initialization with correct base_url and limits via unit test"
+          },
+          {
+            "id": 2,
+            "title": "Implement 10 API domain methods",
+            "description": "Add async methods for all 10 USASpending API domains using the AsyncClient",
+            "dependencies": [
+              1
+            ],
+            "details": "Create async def methods like get_agencies(), get_naics_codes(), etc. that make appropriate GET/POST requests to domain endpoints, handle response.raise_for_status() and return parsed JSON[1][2][3]",
+            "status": "pending",
+            "testStrategy": "Unit test each method with mocked httpx responses returns expected JSON structure"
+          },
+          {
+            "id": 3,
+            "title": "Build in-memory TTL cache in cache.py",
+            "description": "Create dict-based cache with asyncio.Lock and time-based TTL eviction logic",
+            "dependencies": [],
+            "details": "Use dict for storage with asyncio.Lock for thread-safety, implement TTL checks using time.time(): 24h for agencies/NAICS/PSC, 12h for fiscal_year data[1]",
+            "status": "pending",
+            "testStrategy": "Unit test TTL expiration: cache.get('agencies') after 24h+ returns None"
+          },
+          {
+            "id": 4,
+            "title": "Add lazy loading to cache",
+            "description": "Implement cache.get() that populates missing keys via API calls on first access",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "In cache.get(key), if key missing/expired: acquire lock, call corresponding api.method(), store with timestamp, return data. Ensure no duplicate API calls during concurrent access[1][2]",
+            "status": "pending",
+            "testStrategy": "Test concurrent cache.get('agencies') calls: single API hit, all return cached data"
+          },
+          {
+            "id": 5,
+            "title": "Wire cache eviction to resources/updated",
+            "description": "Add cache invalidation callback triggered by resources/updated events",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement cache.clear(key) or cache.clear_all(), register callback on resources/updated endpoint or event system to evict affected cache entries when data updates occur",
+            "status": "pending",
+            "testStrategy": "Integration test: trigger resources/updated callback, verify cache.get('agencies') refetches fresh data"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Core Tools: search_awards and query_agency (STDIO)",
+        "description": "Implement flagship search_awards with pagination and query_agency with breakdown routing per Phase 3",
+        "details": "In `tools/awards.py`: `search_awards` with decision tree, lazy agency/NAICS/PSC resolution, paginated POST to `/api/v2/search/spending_by_award/`, return structured JSON+text. In `tools/agency.py`: `query_agency` routes by `breakdown` param to 8 endpoints using cache.get('agencies'). Register in `tools/registry.py`. Use `@mcp.tool(inputSchema=..., outputSchema=...)` decorators.",
+        "testStrategy": "Test with `mcp-inspector` STDIO mode: verify tool listing, search returns paginated results, agency breakdown routing correct.",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement search_awards tool in awards.py",
+            "description": "Create the search_awards function with decision tree logic, lazy resolution for agency/NAICS/PSC, and paginated POST requests to the USASpending API.",
+            "dependencies": [],
+            "details": "Use async httpx client from client/api.py for POST to /api/v2/search/spending_by_award/. Implement decision tree for query parameters. Add pagination handling with page/limit params and check for 'has_next' in API response. Lazy load lookup data via cache.get().",
+            "status": "pending",
+            "testStrategy": "Test with mcp-inspector STDIO: verify tool schema, single page returns structured JSON+text, pagination advances correctly with next page token."
+          },
+          {
+            "id": 2,
+            "title": "Add @mcp.tool decorator and output formatting to search_awards",
+            "description": "Define inputSchema and outputSchema for search_awards, format response as structured JSON+text for STDIO compatibility.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create inputSchema with fields: query (str), filters (dict for agency/NAICS/PSC), page (int, default=1), limit (int, default=10). outputSchema with results (array), pagination (has_next:bool, next_page:int). Return {'text': summary, 'json': structured_data}.",
+            "status": "pending",
+            "testStrategy": "Run mcp-inspector tool listing, call search_awards with sample query, verify JSON+text output parses correctly and matches API response."
+          },
+          {
+            "id": 3,
+            "title": "Implement query_agency tool with breakdown routing in agency.py",
+            "description": "Create query_agency function that routes based on 'breakdown' parameter to 8 different agency endpoints using cached agencies data.",
+            "dependencies": [],
+            "details": "Use cache.get('agencies') for agency lookup. Implement routing dict mapping breakdown values ('total', 'sub_agencies', etc.) to 8 specific API endpoints. Handle missing breakdown by defaulting to 'total'. Format output as structured JSON+text.",
+            "status": "pending",
+            "testStrategy": "Test each of 8 breakdown routes individually with mcp-inspector, verify correct endpoint called and cached data used."
+          },
+          {
+            "id": 4,
+            "title": "Add @mcp.tool decorator to query_agency and define schemas",
+            "description": "Apply MCP decorators to query_agency with proper input/output schemas for agency breakdown queries.",
+            "dependencies": [
+              3
+            ],
+            "details": "inputSchema: agency_name (str), breakdown (enum of 8 values, default='total'), fiscal_year (int). outputSchema: structured agency data with breakdown metrics. Ensure JSON+text dual output format.",
+            "status": "pending",
+            "testStrategy": "mcp-inspector STDIO: verify tool schema enums correct, test default breakdown routing and all 8 variants return expected structure."
+          },
+          {
+            "id": 5,
+            "title": "Register both tools in tools/registry.py",
+            "description": "Import and register search_awards and query_agency tools in the central registry for MCP discovery.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "In tools/registry.py, add: from tools.awards import search_awards; from tools.agency import query_agency; registry.register_tool(search_awards); registry.register_tool(query_agency). Verify no import conflicts with lazy cache.",
+            "status": "pending",
+            "testStrategy": "Full mcp-inspector STDIO test: list tools shows both, end-to-end search_awards pagination + query_agency breakdown routing work correctly."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Core Tools: get_award and query_recipient (STDIO)",
+        "description": "Complete Phase 3 with award detail routing and recipient autocomplete/profile",
+        "details": "In `tools/awards.py`: `get_award` routes by `detail_type` to 5 endpoints. In `tools/recipients.py`: `query_recipient` prioritizes `recipient_id` profile over `search_text` autocomplete. Both use lazy cache where applicable. Add structured output schemas.",
+        "testStrategy": "mcp-inspector STDIO: test award ID lookup routes correctly, recipient search returns autocomplete, profile by ID works.",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement get_award routing logic in awards.py",
+            "description": "Add detail_type-based routing in get_award to call 5 specific endpoints for award details.",
+            "dependencies": [],
+            "details": "In tools/awards.py, implement if-elif logic or decision tree for detail_type parameter routing to endpoints like summary, transactions, history. Use async calls to USASpending API via api_client.",
+            "status": "pending",
+            "testStrategy": "Test routing with mcp-inspector: verify each detail_type calls correct endpoint and returns structured data."
+          },
+          {
+            "id": 2,
+            "title": "Add lazy caching to get_award function",
+            "description": "Integrate cache.get/set with TTL for award data lookups in get_award.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use client/cache.py lazy cache for award-specific data (12h TTL). Cache keys like f'award:{award_id}:{detail_type}'. Implement cache miss handling with API calls.",
+            "status": "pending",
+            "testStrategy": "Unit test cache hit/miss/eviction. Verify get_award returns cached data on repeat calls."
+          },
+          {
+            "id": 3,
+            "title": "Implement query_recipient prioritization logic",
+            "description": "Build query_recipient to prioritize recipient_id profile lookup over search_text autocomplete.",
+            "dependencies": [],
+            "details": "In tools/recipients.py, check if recipient_id provided first for profile fetch, else fallback to search_text autocomplete via API. Use structured JSON responses.",
+            "status": "pending",
+            "testStrategy": "Test with mcp-inspector: recipient_id returns full profile, search_text returns autocomplete list."
+          },
+          {
+            "id": 4,
+            "title": "Add lazy caching to query_recipient function",
+            "description": "Apply lazy cache with TTL for recipient profiles and autocomplete results.",
+            "dependencies": [
+              3
+            ],
+            "details": "Cache recipient profiles (24h TTL) with keys f'recipient_profile:{recipient_id}', autocomplete f'recipient_search:{search_text}'. Integrate with existing cache module.",
+            "status": "pending",
+            "testStrategy": "Unit tests for cache behavior on recipient queries. Verify no redundant API calls."
+          },
+          {
+            "id": 5,
+            "title": "Define and apply structured output schemas",
+            "description": "Create inputSchema and outputSchema for get_award and query_recipient using @mcp.tool decorators.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Register tools in tools/registry.py. Define Pydantic schemas for inputs (detail_type, award_id, recipient_id, search_text) and outputs (award details, recipient profiles/lists). Update tool descriptions.",
+            "status": "pending",
+            "testStrategy": "Run mcp-inspector STDIO: verify tool schemas validate inputs/outputs correctly for both tools."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Elicitation System Implementation",
+        "description": "Add decision tree elicitor and wire into core tools per Phase 4",
+        "details": "Create `decision_tree/elicitor.py` building `elicitation/create` JSON Schema (primitive types only) for missing params. Implement `decision_tree/router.py` parameter inspection. Update tools 3-4 to check client `capabilities.elicitation`, elicit if needed, handle accepted/declined/cancelled. Declare capability in server init. Use `mcp>=1.3.0` built-in elicitation support.",
+        "testStrategy": "mcp-inspector with elicitation: verify schema presented for missing params, accepted response merges params, declined returns graceful error.",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create decision_tree/elicitor.py with JSON Schema builder",
+            "description": "Implement the elicitor module that generates elicitation/create JSON Schema using only primitive types for missing parameters in tools.",
+            "dependencies": [],
+            "details": "Define a function to inspect tool input schemas, identify missing required primitive params (string, number, boolean, integer), and build MCP-compliant elicitation/create schema. Use mcp>=1.3.0 built-in support.",
+            "status": "pending",
+            "testStrategy": "Unit test schema generation for sample tool schemas with missing string/number params; verify primitive types only."
+          },
+          {
+            "id": 2,
+            "title": "Implement decision_tree/router.py for parameter inspection",
+            "description": "Build router module to analyze tool parameters and determine which require elicitation based on client capabilities.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create inspection logic to check tool inputSchema against provided params, identify missing required fields, and route to elicitor when client supports elicitation. Handle primitive params only.",
+            "status": "pending",
+            "testStrategy": "Unit test parameter inspection: missing required param triggers elicitation routing, complete params skip."
+          },
+          {
+            "id": 3,
+            "title": "Update tools 3-4 to integrate elicitation checks",
+            "description": "Modify core tools (awards.py and agency.py) to check client capabilities.elicitation and trigger elicitation when needed.",
+            "dependencies": [
+              2
+            ],
+            "details": "In search_awards and query_agency: inspect client capabilities on tool call, use router to elicit missing params, handle accepted (merge params), declined/cancelled (graceful error with text response).",
+            "status": "pending",
+            "testStrategy": "mcp-inspector STDIO: test tool calls with missing params show elicitation prompts, verify response handling."
+          },
+          {
+            "id": 4,
+            "title": "Declare elicitation capability in server initialization",
+            "description": "Update server init code to declare capabilities.elicitation support for MCP clients.",
+            "dependencies": [
+              3
+            ],
+            "details": "In server startup (likely mcp.server init), add capabilities declaration including elicitation: true. Ensure compatibility with mcp>=1.3.0 built-in support. Update any capability negotiation logic.",
+            "status": "pending",
+            "testStrategy": "Verify mcp-inspector shows elicitation capability in server info; test capability-aware tool calls."
+          },
+          {
+            "id": 5,
+            "title": "End-to-end testing and integration validation",
+            "description": "Test complete elicitation flow across updated tools using mcp-inspector.",
+            "dependencies": [
+              4
+            ],
+            "details": "Run integration tests: missing params trigger schema presentation, accepted responses merge correctly into tool calls, declined/cancelled return graceful errors. Validate against Phase 4 requirements.",
+            "status": "pending",
+            "testStrategy": "mcp-inspector with elicitation: verify schema presented for missing params, accepted response merges params, declined returns graceful error as per original test strategy."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Remaining Tools Implementation",
+        "description": "Implement query_spending, query_disaster, query_accounts, manage_download per Phase 5",
+        "details": "`tools/spending.py`: `query_spending` routes by `breakdown` to 4 spending endpoints, elicit breakdown if missing. `tools/disaster.py`: `query_disaster` by DEFC code+breakdown, elicit disaster_code. `tools/accounts.py`: `query_accounts` routes by account ID vs symbol. `tools/downloads.py`: `manage_download` with `action=initiate/status`. Wire elicitation to all.",
+        "testStrategy": "mcp-inspector STDIO: test all 8 tools route correctly, elicit missing params, structured JSON+text output.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement query_spending Tool",
+            "description": "Create query_spending function in tools/spending.py that routes by breakdown parameter to 4 spending endpoints and elicits breakdown if missing.",
+            "dependencies": [],
+            "details": "Implement routing logic for breakdown values (e.g., 'agency', 'naics', etc.) to corresponding USASpending API endpoints. Use elicitation system to request missing breakdown param with JSON Schema. Return structured JSON+text output.",
+            "status": "pending",
+            "testStrategy": "Test with mcp-inspector: valid breakdown routes correctly, missing breakdown elicits schema, verify API calls and output format."
+          },
+          {
+            "id": 2,
+            "title": "Implement query_disaster Tool",
+            "description": "Create query_disaster function in tools/disaster.py that handles DEFC code+breakdown and elicits disaster_code if absent.",
+            "dependencies": [],
+            "details": "Parse input for disaster_code (DEFC) and breakdown, route to appropriate disaster spending endpoints. Integrate elicitation for missing disaster_code using decision tree. Ensure proper error handling for invalid codes.",
+            "status": "pending",
+            "testStrategy": "Test routing with valid/invalid DEFC codes, elicit missing params, confirm structured output matches expected schema."
+          },
+          {
+            "id": 3,
+            "title": "Implement query_accounts Tool",
+            "description": "Create query_accounts function in tools/accounts.py that routes by account ID versus symbol lookup.",
+            "dependencies": [],
+            "details": "Add logic to distinguish between numeric account IDs and symbol-based queries, map to USASpending accounts endpoints. Support both direct ID lookups and symbol resolution via API. Include elicitation for ambiguous inputs.",
+            "status": "pending",
+            "testStrategy": "Test ID vs symbol routing, edge cases like invalid symbols, verify account data retrieval and JSON output."
+          },
+          {
+            "id": 4,
+            "title": "Implement manage_download Tool",
+            "description": "Create manage_download function in tools/downloads.py supporting action=initiate and action=status.",
+            "dependencies": [],
+            "details": "Handle download initiation with progress tracking (progressToken) and status polling. Use async operations for long-running downloads. Integrate with notifications system. Return job status and download links.",
+            "status": "pending",
+            "testStrategy": "Test initiate creates job with token, status polls correctly, verify progress notifications in inspector."
+          },
+          {
+            "id": 5,
+            "title": "Wire Elicitation System to All New Tools",
+            "description": "Integrate elicitation capability checking and handling into query_spending, query_disaster, query_accounts, and manage_download.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Update each tool to check client capabilities.elicitation, invoke decision_tree/router.py and elicitor.py for missing params. Handle accepted/declined/cancelled responses. Declare server elicitation capability.",
+            "status": "pending",
+            "testStrategy": "Run mcp-inspector STDIO tests: all 8 tools (including prior) route correctly, elicit missing params, merge accepted responses, handle declines gracefully."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Progress Notifications and MCP Resources",
+        "description": "Add progress notifications to long-running tools and resource subscription system per Phase 6",
+        "details": "Create `notifications/progress.py` emitting `notifications/progress` with `progressToken`. Wire to `search_awards` (per page), `manage_download` (job status), `query_spending`. Implement `resources/registry.py` exposing 4 resources with subscription tracking. Add `resources/freshness.py` polling `/api/v2/awards/last_updated/` every 30min (HTTP only), emit `resources/updated`. Add log notifications.",
+        "testStrategy": "Test progress tokens appear in inspector during paginated search/download. Subscribe to resources, verify update notifications on cache eviction.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement notifications/progress.py module",
+            "description": "Create the progress notifications module that emits 'notifications/progress' events with progressToken for long-running operations.",
+            "dependencies": [],
+            "details": "Define a function or class in notifications/progress.py to generate and emit progress updates using MCP notification system, including progressToken for tracking specific operations.",
+            "status": "pending",
+            "testStrategy": "Unit test emission of progress notifications with valid progressToken; verify event structure in mock MCP inspector."
+          },
+          {
+            "id": 2,
+            "title": "Wire progress notifications to search_awards tool",
+            "description": "Integrate progress notifications into search_awards tool to emit updates per page during paginated searches.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify search_awards implementation to call progress notification after each page fetch, passing appropriate progressToken and percentage complete.",
+            "status": "pending",
+            "testStrategy": "Run paginated search_awards in mcp-inspector; verify progress tokens and updates appear sequentially in network inspector."
+          },
+          {
+            "id": 3,
+            "title": "Wire progress notifications to manage_download and query_spending",
+            "description": "Connect progress notifications to manage_download for job status updates and to query_spending for long queries.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update manage_download to emit job status progress; integrate into query_spending for query progress; ensure consistent progressToken usage across tools.",
+            "status": "pending",
+            "testStrategy": "Test manage_download job flow and query_spending execution; confirm progress notifications with tokens in inspector during operations."
+          },
+          {
+            "id": 4,
+            "title": "Implement resources/registry.py with subscription tracking",
+            "description": "Create resource registry exposing 4 specific resources with subscription tracking mechanism for clients.",
+            "dependencies": [],
+            "details": "In resources/registry.py, define 4 resources (e.g., awards, spending, agencies, etc.); implement subscription list per resource and notification routing to subscribers.",
+            "status": "pending",
+            "testStrategy": "Simulate client subscriptions to resources; verify subscription tracking and targeted notification delivery on updates."
+          },
+          {
+            "id": 5,
+            "title": "Add resources/freshness.py polling and log notifications",
+            "description": "Implement freshness polling every 30min via HTTP to /api/v2/awards/last_updated/ and emit resources/updated; add log notifications.",
+            "dependencies": [
+              4
+            ],
+            "details": "In resources/freshness.py, use httpx for 30min polling loop (HTTP only); emit 'resources/updated' on changes; integrate log notifications for all resource and progress events.",
+            "status": "pending",
+            "testStrategy": "Mock API endpoint; verify polling interval, update emissions on changes, subscription notifications, and log entries during cache eviction tests."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Streamable HTTP Transport with SSE",
+        "description": "Implement dual transport with session management per Phase 7",
+        "details": "Create `transport/http.py` using `FastMCP(transport='streamable-http', host='0.0.0.0', port=8765)`. Implement session ID via `Mcp-Session-Id` header correlation. Route elicitation/notifications to active SSE channels (GET /mcp). POST /mcp handles JSON-RPC with streaming responses. Add Origin validation. Legacy `/sse`/`/message` endpoints behind flag. `transport/session.py` tracks active sessions.",
+        "testStrategy": "curl GET/POST to /mcp, verify SSE notifications, session correlation for elicitation. mcp-inspector HTTP mode full flow.",
+        "priority": "high",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create transport/session.py for session tracking",
+            "description": "Implement session management module to track active SSE channels and correlate requests by session ID",
+            "dependencies": [],
+            "details": "Create `transport/session.py` with a session registry using dict[session_id, set[connection_id]]. Include methods to register/deregister sessions, get active connections by session_id, and cleanup expired sessions. Use asyncio.Lock for thread safety.",
+            "status": "pending",
+            "testStrategy": "Unit test session registration, lookup by Mcp-Session-Id, cleanup of expired sessions"
+          },
+          {
+            "id": 2,
+            "title": "Implement FastMCP streamable HTTP server in transport/http.py",
+            "description": "Set up the core FastMCP server with streamable-http transport on port 8765 with proper configuration",
+            "dependencies": [
+              1
+            ],
+            "details": "Create `transport/http.py` using `FastMCP(transport='streamable-http', host='0.0.0.0', port=8765)`. Configure stateless_http=True, responseMode='stream' support, and resumability options. Import and integrate session manager from task 1.",
+            "status": "pending",
+            "testStrategy": "Verify server starts on port 8765, responds to /mcp GET with text/event-stream, handles POST JSON-RPC"
+          },
+          {
+            "id": 3,
+            "title": "Implement GET /mcp SSE endpoint with session routing",
+            "description": "Handle SSE connections on GET /mcp, establish sessions via Mcp-Session-Id header, route notifications to active channels",
+            "dependencies": [
+              2
+            ],
+            "details": "In FastMCP routes, implement GET /mcp: extract Mcp-Session-Id header, register connection with session manager, stream notifications/elicitations targeted to this session_id. Handle Last-Event-ID for resumability. Set Content-Type: text/event-stream.",
+            "status": "pending",
+            "testStrategy": "curl GET /mcp -H 'Mcp-Session-Id: test123', verify SSE stream opens, send notification via session manager, confirm receipt"
+          },
+          {
+            "id": 4,
+            "title": "Implement POST /mcp JSON-RPC with streaming responses and Origin validation",
+            "description": "Handle JSON-RPC requests on POST /mcp with streaming responses, validate Origin header, correlate via session ID",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement POST /mcp: validate Origin header against allowed list, extract/create Mcp-Session-Id, process JSON-RPC batch with streaming SSE responses for long operations. Use session manager to track request context. Return batch JSON for quick ops.",
+            "status": "pending",
+            "testStrategy": "curl POST /mcp with JSON-RPC, verify Origin validation (reject invalid), check session correlation, test streaming vs batch responses"
+          },
+          {
+            "id": 5,
+            "title": "Add legacy SSE endpoints behind feature flag",
+            "description": "Implement backward-compatible /sse and /message endpoints controlled by feature flag, integrate with new session system",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Add config flag LEGACY_SSE=True. Route GET /sse -> /mcp SSE logic, POST /message -> /mcp POST logic with header translation. Map legacy session handling to new Mcp-Session-Id system. Log deprecation warnings.",
+            "status": "pending",
+            "testStrategy": "With LEGACY_SSE=True, test curl GET /sse and POST /message work identically to /mcp. Verify session correlation across legacy/new endpoints. Test mcp-inspector HTTP full flow."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "STDIO Transport Finalization and Integration Tests",
+        "description": "Complete STDIO transport and full integration testing",
+        "details": "`transport/stdio.py` using `FastMCP(transport='stdio')`. Ensure notifications interleaved correctly on stdout. Add unit tests for decision trees, cache TTL, elicitor schemas. Integration tests with live API using pytest-asyncio.",
+        "testStrategy": "Full mcp-inspector STDIO suite across all 8 tools + elicitation + notifications. Verify no blocking startup calls.",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Finalize STDIO Transport Implementation",
+            "description": "Complete transport/stdio.py using FastMCP(transport='stdio') and ensure notifications interleave correctly on stdout",
+            "dependencies": [],
+            "details": "Implement proper message serialization/deserialization for STDIO transport. Verify notification messages interleave with tool responses without corruption or blocking. Handle bidirectional communication correctly using FastMCP stdio transport.",
+            "status": "pending",
+            "testStrategy": "Manual verification with mcp-inspector STDIO mode to confirm notifications appear interleaved with tool calls on stdout stream"
+          },
+          {
+            "id": 2,
+            "title": "Add Unit Tests for Decision Trees",
+            "description": "Create comprehensive unit tests for decision_tree/elicitor.py and router.py functionality",
+            "dependencies": [],
+            "details": "Test decision tree parameter inspection logic, elicitation schema generation for primitive types, routing decisions based on client capabilities.elicitation. Mock MCP client responses (accepted/declined/cancelled).",
+            "status": "pending",
+            "testStrategy": "@pytest.mark.asyncio tests verifying schema creation, parameter elicitation flow, and decision routing with mocked client capabilities"
+          },
+          {
+            "id": 3,
+            "title": "Implement Cache TTL Unit Tests",
+            "description": "Add unit tests validating cache TTL behavior across award and recipient tools",
+            "dependencies": [],
+            "details": "Test cache entry expiration logic, TTL enforcement during lazy cache lookups in awards.py and recipients.py. Verify stale cache entries are refreshed correctly and fresh entries are served from cache.",
+            "status": "pending",
+            "testStrategy": "Pytest with time mocking to simulate TTL expiration. Verify cache hit/miss behavior and data freshness assertions."
+          },
+          {
+            "id": 4,
+            "title": "Create Elicitor Schemas Unit Tests",
+            "description": "Unit test JSON Schema generation and validation for elicitation/create endpoints",
+            "dependencies": [],
+            "details": "Validate schemas conform to MCP elicitation/create specification using primitive types only. Test schema generation for missing tool parameters. Verify client response integration into tool calls.",
+            "status": "pending",
+            "testStrategy": "Use jsonschema library to validate generated schemas against MCP spec. Test schema-tool parameter merging logic."
+          },
+          {
+            "id": 5,
+            "title": "Develop Full Integration Tests with Live API",
+            "description": "Create pytest-asyncio integration tests covering all 8 tools, elicitation, notifications using mcp-inspector",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Use pytest-asyncio with @pytest.mark.asyncio for live API integration. Test full mcp-inspector STDIO suite across all tools. Verify no blocking startup calls. Include elicitation flows and notification delivery.",
+            "status": "pending",
+            "testStrategy": "pytest-asyncio fixtures for MCP server startup. Integration tests with real API calls, mcp-inspector STDIO flows, notification verification, and performance checks for startup blocking."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "MCPB Packaging and Documentation",
+        "description": "Finalize MCPB extension packaging and deployment docs per Phase 8",
+        "details": "Finalize `pyproject.toml` with `[project.entry-points.\"mcpb.extensions\"]`. Test `uvx usaspending-mcp` from GitHub. Create README with Claude Desktop/Code configs, WYRE gateway deployment. Build `.mcpb` artifact. Verify both entry points.",
+        "testStrategy": "Clean `uvx` install from GitHub, test both transports, verify MCPB manifest capabilities.",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Finalize pyproject.toml with MCPB entry points",
+            "description": "Update pyproject.toml to include [project.entry-points.'mcpb.extensions'] with usaspending-mcp entry points for both STDIO and HTTP transports.",
+            "dependencies": [],
+            "details": "Add [project.entry-points.'mcpb.extensions'] table per Python packaging spec. Define entries pointing to server.py main functions for usaspending-mcp (STDIO) and usaspending-mcp-http (port 8765). Ensure required metadata like name, version, dependencies are static or dynamic as needed[1][6].",
+            "status": "pending",
+            "testStrategy": "Validate TOML syntax with 'uv parse' and check entry points discoverable via importlib.metadata after build."
+          },
+          {
+            "id": 2,
+            "title": "Test uvx usaspending-mcp installation from GitHub",
+            "description": "Verify clean installation and execution of the MCPB extension using uvx directly from GitHub repository.",
+            "dependencies": [
+              1
+            ],
+            "details": "Run 'uvx --from git+https://github.com/user/usaspending-mcp.git usaspending-mcp' in clean environment. Test both transports: STDIO default and HTTP with --transport http flags. Capture capabilities JSON output.",
+            "status": "pending",
+            "testStrategy": "Confirm no dependency resolution errors, entry points activate correctly, and MCP server starts without crashes on both transports."
+          },
+          {
+            "id": 3,
+            "title": "Create comprehensive README documentation",
+            "description": "Write README.md covering Claude Desktop/Code configurations, WYRE gateway deployment instructions, and usage examples.",
+            "dependencies": [
+              1
+            ],
+            "details": "Include sections: 1) Installation via uvx/GitHub, 2) Claude Desktop/Code MCPB config snippets, 3) WYRE gateway deployment steps (docker-compose, env vars), 4) Transport usage examples, 5) Tool capabilities overview. Use markdown with code blocks.",
+            "status": "pending",
+            "testStrategy": "Validate all code snippets execute successfully in clean env. Cross-reference with actual entry points and server behavior."
+          },
+          {
+            "id": 4,
+            "title": "Build and package .mcpb artifact",
+            "description": "Generate the final .mcpb distribution artifact using appropriate MCPB/fastmcp packaging tools.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use 'uv build' or mcpb-specific build command to create .mcpb file containing manifest, entry points, and all dependencies. Ensure build includes pyproject.toml entry points and verifies MCPB extension format compatibility.",
+            "status": "pending",
+            "testStrategy": "Validate .mcpb file integrity, test installation via 'mcpb install path/to/artifact.mcpb', confirm both entry points register correctly."
+          },
+          {
+            "id": 5,
+            "title": "Verify both MCPB entry points functionality",
+            "description": "Comprehensive validation of STDIO and HTTP entry points including full capabilities, tools, and transport detection.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Test1: 'uvx usaspending-mcp' (STDIO) - verify 8+ tools, elicitation, notifications via mcp-inspector. Test2: 'uvx usaspending-mcp --transport http' (port 8765) - same verification. Test .mcpb artifact installation and execution.",
+            "status": "pending",
+            "testStrategy": "Run complete mcp-inspector suite on both transports from GitHub/artifact installs. Verify manifest capabilities match implementation across decision trees, caching, API endpoints."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "MCP Tasks Implementation (Stretch)",
+        "description": "Wrap manage_download in MCP Tasks abstraction per Phase 9",
+        "details": "Check `mcp>=1.3.0` Task support. If available, convert `manage_download` action=status to Task polling with graceful fallback to progress notifications. Declare task capability.",
+        "testStrategy": "Test task creation/polling with inspector (if supported), fallback to legacy polling.",
+        "priority": "low",
+        "dependencies": [
+          10
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Check MCP Client Task Support",
+            "description": "Detect if connected MCP client supports tasks capability (mcp>=1.3.0)",
+            "dependencies": [],
+            "details": "In server initialization or manage_download entry, query client capabilities for 'tasks' support using MCP lifecycle methods. Log version and capability status for debugging.",
+            "status": "pending",
+            "testStrategy": "Use mcp-inspector to verify capability detection logs correctly for task-supported and unsupported clients."
+          },
+          {
+            "id": 2,
+            "title": "Declare Task Capability in Server",
+            "description": "Add 'tasks' capability declaration to MCP server manifest",
+            "dependencies": [],
+            "details": "Update server.py or __init__.py to include tasks capability in capabilities response per MCP spec. Ensure compatibility with existing elicitation declaration.",
+            "status": "pending",
+            "testStrategy": "Verify capabilities JSON includes 'tasks' via mcp-inspector --capabilities command."
+          },
+          {
+            "id": 3,
+            "title": "Implement Task Creation for Download Initiate",
+            "description": "Convert manage_download action=initiate to create MCP Task",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "When action=initiate, use MCP tasks/create method instead of direct download start. Store task ID and download state mapping. Return task ID in structured response.",
+            "status": "pending",
+            "testStrategy": "Test initiate returns valid task ID; verify task listing shows pending download task."
+          },
+          {
+            "id": 4,
+            "title": "Implement Task Polling for Download Status",
+            "description": "Replace action=status with MCP tasks/get polling when tasks supported",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "For action=status with task_id param, call MCP tasks/get. Map download progress/state to task status (pending/in-progress/completed/failed). Support task cancellation.",
+            "status": "pending",
+            "testStrategy": "Poll task status through lifetime; verify progress updates and final completion state."
+          },
+          {
+            "id": 5,
+            "title": "Add Graceful Fallback to Progress Notifications",
+            "description": "Fallback to legacy progress notifications when tasks unsupported",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "If no task support detected, use original action=status polling and server notifications. Ensure seamless client experience with feature detection at runtime.",
+            "status": "pending",
+            "testStrategy": "Test full flow with task-support disabled; verify fallback polling works identically to legacy behavior."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2026-02-26T16:59:00.196Z",
+      "updated": "2026-02-26T16:59:00.196Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
