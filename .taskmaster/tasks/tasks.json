@@ -86,7 +86,7 @@
         "dependencies": [
           "1"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -147,7 +147,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:04:43.621Z"
+        "updatedAt": "2026-02-26T17:06:18.479Z"
       },
       {
         "id": "3",
@@ -159,7 +159,7 @@
         "dependencies": [
           "2"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -218,7 +218,8 @@
             "testStrategy": "Full mcp-inspector STDIO test: list tools shows both, end-to-end search_awards pagination + query_agency breakdown routing work correctly.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:06:22.568Z"
       },
       {
         "id": "4",
@@ -795,9 +796,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:04:43.621Z",
+      "lastModified": "2026-02-26T17:06:22.568Z",
       "taskCount": 11,
-      "completedCount": 1,
+      "completedCount": 2,
       "tags": [
         "master"
       ]
