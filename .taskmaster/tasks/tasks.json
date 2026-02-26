@@ -159,7 +159,7 @@
         "dependencies": [
           "2"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -219,7 +219,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:06:22.568Z"
+        "updatedAt": "2026-02-26T17:08:42.946Z"
       },
       {
         "id": "4",
@@ -231,7 +231,7 @@
         "dependencies": [
           "3"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -290,7 +290,8 @@
             "testStrategy": "Run mcp-inspector STDIO: verify tool schemas validate inputs/outputs correctly for both tools.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:08:47.502Z"
       },
       {
         "id": "5",
@@ -796,9 +797,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:06:22.568Z",
+      "lastModified": "2026-02-26T17:08:47.502Z",
       "taskCount": 11,
-      "completedCount": 2,
+      "completedCount": 3,
       "tags": [
         "master"
       ]
