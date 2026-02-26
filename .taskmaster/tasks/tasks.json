@@ -231,7 +231,7 @@
         "dependencies": [
           "3"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -291,7 +291,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:08:47.502Z"
+        "updatedAt": "2026-02-26T17:09:16.812Z"
       },
       {
         "id": "5",
@@ -303,7 +303,7 @@
         "dependencies": [
           "4"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -363,7 +363,8 @@
             "testStrategy": "mcp-inspector with elicitation: verify schema presented for missing params, accepted response merges params, declined returns graceful error as per original test strategy.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:09:25.213Z"
       },
       {
         "id": "6",
@@ -797,9 +798,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:08:47.502Z",
+      "lastModified": "2026-02-26T17:09:25.213Z",
       "taskCount": 11,
-      "completedCount": 3,
+      "completedCount": 4,
       "tags": [
         "master"
       ]
