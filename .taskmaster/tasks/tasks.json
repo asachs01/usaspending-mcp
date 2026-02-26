@@ -446,7 +446,7 @@
         "dependencies": [
           "6"
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -505,7 +505,7 @@
             "parentId": "undefined"
           }
         ],
-        "updatedAt": "2026-02-26T17:11:55.368Z"
+        "updatedAt": "2026-02-26T17:13:42.062Z"
       },
       {
         "id": "8",
@@ -517,7 +517,7 @@
         "dependencies": [
           "7"
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -578,7 +578,8 @@
             "testStrategy": "With LEGACY_SSE=True, test curl GET /sse and POST /message work identically to /mcp. Verify session correlation across legacy/new endpoints. Test mcp-inspector HTTP full flow.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-02-26T17:13:47.983Z"
       },
       {
         "id": "9",
@@ -800,9 +801,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-02-26T17:11:55.368Z",
+      "lastModified": "2026-02-26T17:13:47.983Z",
       "taskCount": 11,
-      "completedCount": 6,
+      "completedCount": 7,
       "tags": [
         "master"
       ]

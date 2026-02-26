@@ -6,6 +6,17 @@ import sys
 
 from mcp.server.fastmcp import FastMCP
 
+
+def _get_port() -> int:
+    """Get HTTP port from args or env."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--port", type=int, default=None)
+    args, _ = parser.parse_known_args()
+    if args.port:
+        return args.port
+    return int(os.environ.get("USASPENDING_MCP_PORT", "8765"))
+
+
 mcp = FastMCP(
     "USASpending",
     instructions=(
@@ -15,6 +26,8 @@ mcp = FastMCP(
         "and bulk downloads."
     ),
     json_response=True,
+    host=os.environ.get("USASPENDING_MCP_HOST", "0.0.0.0"),
+    port=_get_port(),
 )
 
 # Import tool and resource modules so they register with @mcp.tool() / @mcp.resource()
@@ -26,7 +39,6 @@ def _detect_transport() -> str:
     """Detect transport mode from args, env, or stdin state."""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--transport", choices=["stdio", "http"], default=None)
-    parser.add_argument("--port", type=int, default=None)
     args, _ = parser.parse_known_args()
 
     # Explicit flag takes priority
@@ -52,16 +64,6 @@ def _detect_transport() -> str:
     return "stdio"
 
 
-def _get_port() -> int:
-    """Get HTTP port from args or env."""
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--port", type=int, default=None)
-    args, _ = parser.parse_known_args()
-    if args.port:
-        return args.port
-    return int(os.environ.get("USASPENDING_MCP_PORT", "8765"))
-
-
 def main_stdio():
     """Entry point for STDIO transport."""
     mcp.run(transport="stdio")
@@ -69,8 +71,7 @@ def main_stdio():
 
 def main_http():
     """Entry point for HTTP transport."""
-    port = _get_port()
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=port)
+    mcp.run(transport="streamable-http")
 
 
 def main():
