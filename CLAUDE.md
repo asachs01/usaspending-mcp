@@ -48,3 +48,14 @@ Using Taskmaster. Tasks are in `.taskmaster/tasks/tasks.json`.
 
 ## PRD Reference
 Full PRD is in `usaspending-prd.md` at project root.
+
+## Learnings - 2026-02-26
+
+### FastMCP host/port on `__init__`, not `run()`
+`FastMCP.run()` only accepts `transport` and `mount_path`. Host and port must be set via `FastMCP("Name", host=..., port=...)` constructor kwargs.
+
+### httpx `raise_for_status()` needs tool-level catch in MCP servers
+API client methods calling `r.raise_for_status()` raise `httpx.HTTPStatusError` on 4xx/5xx. MCP tools must catch these and return `{"error": ...}` dicts — otherwise FastMCP converts them to opaque internal errors.
+
+### Tool error/success conventions
+All 8 tools return `dict` with `"error"` key on failure, structured data with `"_query"` metadata on success. Tests use `respx.mock` decorator with path-only patterns. Use `.venv/bin/python` to run tests (system python lacks deps).

@@ -1,0 +1,13 @@
+name = "usaspending-mcp"
+main = "workers/proxy.js"
+compatibility_date = "2025-01-01"
+
+# Set BACKEND_URL via `wrangler secret put BACKEND_URL` or in the dashboard
+# e.g. https://usaspending-mcp-api-xxxxx.ondigitalocean.app
+[vars]
+BACKEND_URL = ""
+
+# Optional: bind to a custom domain
+# [[routes]]
+# pattern = "mcp.yourdomain.com/*"
+# zone_name = "yourdomain.com"

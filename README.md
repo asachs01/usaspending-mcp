@@ -1,5 +1,10 @@
 # usaspending-mcp
 
+[![CI](https://github.com/asachs01/usaspending-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/asachs01/usaspending-mcp/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blueviolet.svg)](https://modelcontextprotocol.io)
+
 Production-grade MCP server for US federal spending data via [api.usaspending.gov](https://api.usaspending.gov).
 
 ## Features
@@ -117,14 +122,62 @@ USASPENDING_MCP_PORT=8765 usaspending-mcp-http
 | `usaspending://data-freshness` | Last updated timestamp from the API |
 | `usaspending://glossary` | Federal spending glossary terms |
 
+## Deployment
+
+### Docker
+
+```bash
+docker build -t usaspending-mcp .
+docker run -p 8765:8765 usaspending-mcp
+```
+
+### DigitalOcean App Platform
+
+The `.do/app.yaml` spec deploys the server as a container. Use the DO CLI or dashboard:
+
+```bash
+doctl apps create --spec .do/app.yaml
+```
+
+The server listens on port 8765 (`/mcp`). Connect Claude Desktop/Code via `mcp-remote`:
+
+```json
+{
+  "mcpServers": {
+    "usaspending": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://your-app.ondigitalocean.app/mcp"]
+    }
+  }
+}
+```
+
+### Cloudflare Workers (edge proxy)
+
+CF Workers can't host a persistent Python server, but `workers/proxy.js` puts CF's edge network in front of your DO deployment:
+
+```bash
+# Point the worker at your DO app URL
+wrangler secret put BACKEND_URL
+# → https://usaspending-mcp-api-xxxxx.ondigitalocean.app
+
+# Deploy
+wrangler deploy
+```
+
+Then update your `mcp-remote` URL to the CF Worker endpoint.
+
 ## Development
 
 ```bash
+# Install with dev dependencies (requires uv)
+uv sync --group dev
+
 # Run tests
-pytest tests/ -v
+uv run pytest tests/ -v
 
 # Run a specific test file
-pytest tests/test_tools_awards.py -v
+uv run pytest tests/test_tools_awards.py -v
 ```
 
 ## Architecture

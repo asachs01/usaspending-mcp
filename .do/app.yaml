@@ -1,0 +1,24 @@
+name: usaspending-mcp
+region: nyc
+
+services:
+  - name: api
+    dockerfile_path: Dockerfile
+    github:
+      repo: asachs01/usaspending-mcp
+      branch: main
+      deploy_on_push: true
+    http_port: 8765
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    health_check:
+      port: 8765
+      # TCP check — FastMCP HTTP binds on 8765 at startup
+      # Upgrade to HTTP once a /health route is added
+    envs:
+      - key: USASPENDING_MCP_TRANSPORT
+        value: http
+      - key: USASPENDING_MCP_HOST
+        value: "0.0.0.0"
+      - key: USASPENDING_MCP_PORT
+        value: "8765"
